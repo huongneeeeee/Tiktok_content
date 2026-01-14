@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ video.title }} - TikVault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .category-badge {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+
+        .ai-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .share-btn {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
+        .share-btn:hover {
+            background: rgba(59, 130, 246, 0.4);
+        }
+
+        /* Timeline dots */
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            border-radius: 50%;
+        }
+
+        /* Toast Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-slate-900">
+    <!-- Header -->
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-40">
+        <div class="container mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-6">
+                <!-- Logo -->
+                <a href="/" class="flex items-center space-x-2">
+                    <div class="bg-blue-600 p-2 rounded-lg">
+                        <i class="fa-solid fa-play text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold text-white">TikVault</span>
+                </a>
+                <!-- Search -->
+                <div class="hidden md:flex items-center bg-slate-700/50 rounded-lg px-4 py-2 w-64">
+                    <i class="fa-solid fa-search text-slate-400 mr-2"></i>
+                    <input type="text" placeholder="Search videos..."
+                        class="bg-transparent outline-none text-white placeholder-slate-400 flex-1">
+                </div>
+            </div>
+            <nav class="flex items-center space-x-6">
+                <a href="/" class="text-slate-300 hover:text-white transition">Feed</a>
+                <a href="/library" class="text-slate-300 hover:text-white transition">Library</a>
+                <a href="/search" class="text-slate-300 hover:text-white transition">Search</a>
+                <a href="/chat" class="text-slate-300 hover:text-white transition">Chat</a>
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm cursor-pointer"
+                    onclick="window.location.href='/'">
+                    U
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+        <!-- Breadcrumb -->
+        <div class="flex items-center space-x-2 text-sm mb-6">
+            <a href="/" class="text-slate-400 hover:text-white transition">Home</a>
+            <i class="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
+            {% if video.ai_analysis and video.ai_analysis.classification %}
+            <span class="text-slate-400">{{ video.ai_analysis.classification.level_1 }}</span>
+            <i class="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
+            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-xs">
+                {{ video.ai_analysis.classification.level_2 or video.ai_analysis.classification.level_1 }}
+            </span>
+            {% else %}
+            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-xs">Video</span>
+            {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <!-- Left: Media Preview -->
+            <div class="lg:col-span-2">
+                <div class="glass-card rounded-2xl overflow-hidden sticky top-24">
+                    {% if video.is_slideshow %}
+                    <!-- SLIDESHOW -->
+                    {% set slideshow_imgs = video.slideshow_images if video.slideshow_images else [] %}
+                    {% set first_img = slideshow_imgs[0] if slideshow_imgs|length > 0 else
+                    '/scraper_images/tiktok_picture_' ~ video.video_id ~ '_0.jpeg' %}
+                    <div class="relative">
+                        <div class="aspect-[9/16] bg-black flex items-center justify-center">
+                            <img id="slideshow-main" src="{{ first_img }}" class="max-w-full max-h-full object-contain"
+                                alt="Slide"
+                                onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'text-center text-slate-500\'><i class=\'fa-solid fa-images text-4xl mb-2\'></i><p>No images</p></div>'">
+                        </div>
+                        <!-- Navigation -->
+                        {% if video.slideshow_images and video.slideshow_images|length > 1 %}
+                        <button onclick="prevSlide()"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black text-white w-10 h-10 rounded-full">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button onclick="nextSlide()"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black text-white w-10 h-10 rounded-full">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        <div
+                            class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-sm px-4 py-1 rounded-full">
+                            <span id="slide-current">1</span> / {{ video.slideshow_images|length }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <!-- Audio Player for Slideshow -->
+                    <div class="p-4 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
+                        <audio controls class="w-full">
+                            <source src="/temp/{{ video.video_id }}_music.mp3" type="audio/mpeg">
+                        </audio>
+                    </div>
+                    {% else %}
+                    <!-- VIDEO -->
+                    <div class="relative">
+                        <video controls class="w-full aspect-[9/16] bg-black" poster="{{ video.thumbnail }}">
+                            <source src="/temp/{{ video.filename }}" type="video/mp4">
+                        </video>
+                        <!-- Play overlay -->
+                        <div id="play-overlay"
+                            class="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer"
+                            onclick="playVideo()">
+                            <div
+                                class="w-16 h-16 bg-blue-600/90 rounded-full flex items-center justify-center hover:bg-blue-600 transition-transform hover:scale-110">
+                                <i class="fa-solid fa-play text-white text-2xl ml-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Hashtags -->
+                {% if video.hashtags %}
+                <div class="mt-4 flex flex-wrap gap-2">
+                    {% for tag in video.hashtags %}
+                    <span class="text-blue-400 text-sm hover:underline cursor-pointer">#{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right: Video Info -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Title -->
+                <h1 class="text-3xl font-bold text-white leading-tight">{{ video.title }}</h1>
+
+                <!-- Author Info -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <img src="{{ video.author.avatar if video.author and video.author.avatar else 'https://ui-avatars.com/api/?name=U&background=random' }}"
+                            class="w-12 h-12 rounded-full object-cover border-2 border-slate-600"
+                            onerror="this.src='https://ui-avatars.com/api/?name=U&background=random'">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="font-semibold text-white">@{{ video.author.nickname if video.author else
+                                    'Unknown' }}</span>
+                                <i class="fa-solid fa-circle-check text-blue-500 text-sm"></i>
+                                <button class="text-blue-400 text-sm hover:underline">Follow</button>
+                            </div>
+                            <p class="text-slate-400 text-sm">
+                                Posted on {{ video.create_time if video.create_time else 'N/A' }}
+                                {% if video.stats %}
+                                • <span class="text-slate-300">{{ video.stats.views|default(0) }}</span> Views
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <button class="text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-ellipsis-vertical text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Stats -->
+                {% if video.stats %}
+                <div class="flex items-center space-x-6 text-sm">
+                    <span class="flex items-center space-x-2 text-pink-400">
+                        <i class="fa-solid fa-heart"></i>
+                        <span>{{ video.stats.likes|default(0) }}</span>
+                    </span>
+                    <span class="flex items-center space-x-2 text-slate-400">
+                        <i class="fa-solid fa-comment"></i>
+                        <span>{{ video.stats.comments|default(0) }}</span>
+                    </span>
+                    <span class="flex items-center space-x-2 text-slate-400">
+                        <i class="fa-solid fa-share"></i>
+                        <span>{{ video.stats.shares|default(0) }}</span>
+                    </span>
+                    <span class="flex items-center space-x-2 text-slate-400">
+                        <i class="fa-solid fa-bookmark"></i>
+                        <span>{{ video.stats.saves|default(0) }}</span>
+                    </span>
+                </div>
+                {% endif %}
+
+                <!-- Actions -->
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-slate-400 text-sm uppercase tracking-wider mb-3">Actions</p>
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="flex-1 bg-slate-900 rounded-lg px-4 py-2 flex items-center">
+                            <i class="fa-solid fa-link text-slate-500 mr-2"></i>
+                            <input type="text" readonly value="{{ video.original_url or '' }}"
+                                class="bg-transparent text-slate-300 text-sm flex-1 outline-none" id="shareUrl">
+                        </div>
+                        <button onclick="copyUrl()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+                            title="Copy URL">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                    <button onclick="deleteVideo('{{ video.video_id }}')"
+                        class="w-full bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white py-2 rounded-lg font-medium transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Delete Video</span>
+                    </button>
+                </div>
+
+                <!-- Knowledge Card -->
+                {% set kc = video.ai_analysis.knowledge_card if video.ai_analysis and video.ai_analysis.knowledge_card
+                else none %}
+                {% if kc %}
+                <div class="ai-card rounded-xl p-5">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-brain text-purple-400"></i>
+                            <span class="font-semibold text-white">Knowledge Card</span>
+                        </div>
+                    </div>
+
+                    <!-- Refined Title -->
+                    {% if kc.title and kc.title != video.title %}
+                    <h3 class="text-lg font-semibold text-white mb-2">{{ kc.title }}</h3>
+                    {% endif %}
+
+                    <!-- Summary -->
+                    <p class="text-slate-300 leading-relaxed mb-4">
+                        {{ kc.summary }}
+                    </p>
+
+                    <!-- Key Takeaways -->
+                    {% if kc.key_takeaways %}
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium text-amber-400 mb-2 flex items-center">
+                            <i class="fa-solid fa-lightbulb mr-2"></i>Điểm chính
+                        </h4>
+                        <ul class="text-slate-300 text-sm space-y-2">
+                            {% for takeaway in kc.key_takeaways %}
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-check text-green-400 mr-2 mt-1 text-xs"></i>
+                                <span>{{ takeaway }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Items -->
+                    {% if kc.action_items %}
+                    <div class="mb-4 bg-slate-800/50 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-blue-400 mb-2 flex items-center">
+                            <i class="fa-solid fa-list-check mr-2"></i>Các bước thực hiện
+                        </h4>
+                        <ol class="text-slate-300 text-sm space-y-2">
+                            {% for step in kc.action_items %}
+                            <li class="flex items-start">
+                                <span
+                                    class="bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">{{
+                                    loop.index }}</span>
+                                <span>{{ step }}</span>
+                            </li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                    {% endif %}
+
+                    <!-- Entities -->
+                    {% if kc.entities %}
+                    {% set ent = kc.entities %}
+                    {% if ent.ingredients or ent.products or ent.tools_software or ent.locations %}
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        {% if ent.ingredients %}
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <h5 class="text-xs font-medium text-amber-400 mb-1"><i
+                                    class="fa-solid fa-basket-shopping mr-1"></i>Nguyên liệu</h5>
+                            <p class="text-slate-400 text-xs">{{ ent.ingredients|join(', ') }}</p>
+                        </div>
+                        {% endif %}
+                        {% if ent.products %}
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <h5 class="text-xs font-medium text-pink-400 mb-1"><i class="fa-solid fa-tag mr-1"></i>Sản
+                                phẩm</h5>
+                            <p class="text-slate-400 text-xs">{{ ent.products|join(', ') }}</p>
+                        </div>
+                        {% endif %}
+                        {% if ent.tools_software %}
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <h5 class="text-xs font-medium text-cyan-400 mb-1"><i
+                                    class="fa-solid fa-wrench mr-1"></i>Công cụ</h5>
+                            <p class="text-slate-400 text-xs">{{ ent.tools_software|join(', ') }}</p>
+                        </div>
+                        {% endif %}
+                        {% if ent.locations %}
+                        <div class="bg-slate-800/50 rounded-lg p-3">
+                            <h5 class="text-xs font-medium text-emerald-400 mb-1"><i
+                                    class="fa-solid fa-location-dot mr-1"></i>Địa điểm</h5>
+                            <p class="text-slate-400 text-xs">{{ ent.locations|join(', ') }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- Tags -->
+                    {% if kc.tags %}
+                    <div class="flex flex-wrap gap-2 pt-4 border-t border-slate-700">
+                        {% for tag in kc.tags %}
+                        <span class="bg-slate-800 text-slate-300 text-xs px-3 py-1 rounded-full">#{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-700">
+                        <span class="text-xs text-slate-500">Generated by TikVault Refiner</span>
+                        <div class="flex items-center space-x-2">
+                            <!-- Copy Dropdown -->
+                            <div class="relative" id="copyDropdown">
+                                <button onclick="toggleCopyMenu(event)"
+                                    class="flex items-center space-x-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 text-xs px-3 py-1.5 rounded transition"
+                                    title="Copy Knowledge">
+                                    <i class="fa-solid fa-copy"></i>
+                                    <span>Copy</span>
+                                    <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
+                                </button>
+                                <div id="copyMenu"
+                                    class="hidden absolute right-0 bottom-full mb-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-20 min-w-[150px] overflow-hidden">
+                                    <button onclick="copyKnowledge('json')"
+                                        class="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 flex items-center">
+                                        <i class="fa-solid fa-code mr-2 text-amber-400"></i>JSON
+                                    </button>
+                                    <button onclick="copyKnowledge('markdown')"
+                                        class="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 flex items-center">
+                                        <i class="fa-brands fa-markdown mr-2 text-blue-400"></i>Markdown
+                                    </button>
+                                    <button onclick="copyKnowledge('text')"
+                                        class="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 flex items-center">
+                                        <i class="fa-solid fa-align-left mr-2 text-green-400"></i>Plain Text
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Chat Button -->
+                            <button onclick="openVideoChat()"
+                                class="flex items-center space-x-1 bg-gradient-to-r from-purple-600/50 to-pink-600/50 hover:from-purple-600 hover:to-pink-600 text-white text-xs px-3 py-1.5 rounded transition"
+                                title="Chat với Video này">
+                                <i class="fa-solid fa-comments"></i>
+                                <span>Chat</span>
+                            </button>
+                            <!-- Re-analyze -->
+                            <button onclick="reanalyzeVideo()"
+                                class="flex items-center space-x-1 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 text-xs px-3 py-1.5 rounded transition"
+                                title="Phân tích lại với prompt mới">
+                                <i class="fa-solid fa-rotate"></i>
+                            </button>
+                            <!-- Export -->
+                            <button onclick="exportKnowledge()"
+                                class="flex items-center space-x-1 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 text-xs px-3 py-1.5 rounded transition"
+                                title="Export as Markdown">
+                                <i class="fa-solid fa-file-export"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% elif video.ai_analysis and video.ai_analysis.summary %}
+                <!-- Fallback: Old format summary -->
+                <div class="ai-card rounded-xl p-5">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="fa-solid fa-wand-magic-sparkles text-blue-400"></i>
+                        <span class="font-semibold text-white">Tóm tắt AI</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        {{ video.ai_analysis.summary }}
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- RAG Data (Legacy Support) -->
+                {% if video.ai_analysis and video.ai_analysis.rag_data %}
+                {% set rag = video.ai_analysis.rag_data %}
+                {% if rag.ingredients or rag.steps or rag.products or rag.locations %}
+                <div class="glass-card rounded-xl p-5">
+                    <h3 class="font-semibold text-white mb-4 flex items-center">
+                        <i class="fa-solid fa-layer-group text-amber-400 mr-2"></i>
+                        Thông tin trích xuất
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% if rag.ingredients %}
+                        <div>
+                            <h4 class="text-sm font-medium text-amber-400 mb-2">
+                                <i class="fa-solid fa-basket-shopping mr-1"></i>Nguyên liệu
+                            </h4>
+                            <ul class="text-slate-300 text-sm space-y-1">
+                                {% for item in rag.ingredients %}<li>• {{ item }}</li>{% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        {% if rag.steps %}
+                        <div>
+                            <h4 class="text-sm font-medium text-amber-400 mb-2">
+                                <i class="fa-solid fa-list-ol mr-1"></i>Các bước
+                            </h4>
+                            <ol class="text-slate-300 text-sm space-y-1 list-decimal list-inside">
+                                {% for step in rag.steps %}<li>{{ step }}</li>{% endfor %}
+                            </ol>
+                        </div>
+                        {% endif %}
+                        {% if rag.products %}
+                        <div>
+                            <h4 class="text-sm font-medium text-amber-400 mb-2">
+                                <i class="fa-solid fa-box mr-1"></i>Sản phẩm
+                            </h4>
+                            <ul class="text-slate-300 text-sm space-y-1">
+                                {% for item in rag.products %}<li>• {{ item }}</li>{% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        {% if rag.locations %}
+                        <div>
+                            <h4 class="text-sm font-medium text-amber-400 mb-2">
+                                <i class="fa-solid fa-map-marker-alt mr-1"></i>Địa điểm
+                            </h4>
+                            <ul class="text-slate-300 text-sm space-y-1">
+                                {% for loc in rag.locations %}<li>• {{ loc }}</li>{% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <!-- Transcript -->
+                <details class="glass-card rounded-xl p-5">
+                    <summary class="cursor-pointer text-white font-semibold flex items-center">
+                        <i class="fa-solid fa-closed-captioning mr-2 text-slate-400"></i>
+                        Transcript
+                        <i class="fa-solid fa-chevron-down ml-auto text-slate-400 text-sm"></i>
+                    </summary>
+                    <div
+                        class="mt-4 p-4 bg-slate-900 rounded-lg text-sm text-slate-400 font-mono max-h-60 overflow-y-auto">
+                        {{ video.transcript or 'No transcript available' }}
+                    </div>
+                </details>
+
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Template Data (hidden from JS parser) -->
+    <script id="knowledgeCardData" type="application/json">{{ kc | tojson | safe if kc else '{}' }}</script>
+    <script id="videoIdData" type="application/json">"{{ video.video_id }}"</script>
+    {% if video.is_slideshow and video.slideshow_images %}
+    <script id="slideshowData" type="application/json">{{ video.slideshow_images | tojson | safe }}</script>
+    {% endif %}
+
+    <script>
+        // ============================================================
+        // VIDEO DETAIL PAGE - JavaScript
+        // ============================================================
+        // Sections:
+        //   1. Data Initialization (from JSON script blocks)
+        //   2. Video Actions (copy URL, delete, re-analyze, export)
+        //   3. Video Player Controls
+        //   4. Copy Knowledge Functions
+        //   5. Floating Chat Functions
+        // ============================================================
+
+        // ------------------------------------------------------------
+        // 1. DATA INITIALIZATION
+        // ------------------------------------------------------------
+        const knowledgeData = JSON.parse(document.getElementById('knowledgeCardData')?.textContent || '{}');
+        const videoId = JSON.parse(document.getElementById('videoIdData')?.textContent || '""');
+
+        // ------------------------------------------------------------
+        // 2. VIDEO ACTIONS
+        // ------------------------------------------------------------
+
+        // Copy original TikTok URL
+        function copyUrl() {
+            const input = document.getElementById('shareUrl');
+            input.select();
+            document.execCommand('copy');
+            alert('Đã copy link!');
+        }
+
+        // Delete video
+        async function deleteVideo(videoId) {
+            if (!confirm('Bạn có chắc muốn xóa video này?')) return;
+
+            try {
+                const response = await fetch('/api/video/' + videoId, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Đã xóa video!');
+                    window.location.href = '/';
+                } else {
+                    alert('Lỗi: ' + result.error);
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // 3. VIDEO PLAYER CONTROLS
+        // ------------------------------------------------------------
+
+        // Play video with overlay
+        function playVideo() {
+            const video = document.querySelector('video');
+            const overlay = document.getElementById('play-overlay');
+            if (video && overlay) {
+                video.play();
+                overlay.style.display = 'none';
+            }
+        }
+
+        // Add click listener to video
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.querySelector('video');
+            if (video) {
+                video.addEventListener('play', () => {
+                    const overlay = document.getElementById('play-overlay');
+                    if (overlay) overlay.style.display = 'none';
+                });
+                video.addEventListener('pause', () => {
+                    const overlay = document.getElementById('play-overlay');
+                    if (overlay && video.currentTime > 0) overlay.style.display = 'none';
+                });
+            }
+        });
+
+        // Re-analyze video with AI
+        async function reanalyzeVideo() {
+            if (!confirm('Phân tích lại video này với prompt mới?')) return;
+
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/video/' + videoId + '/reanalyze', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('✅ Đã phân tích lại thành công!\n\nCategory: ' + (result.knowledge_card?.category_path || 'N/A'));
+                    window.location.reload();
+                } else {
+                    alert('❌ Lỗi: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Lỗi: ' + error.message);
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+
+        // Export Knowledge Card as Markdown
+        function exportKnowledge() {
+            window.open('/api/video/' + videoId + '/export', '_blank');
+        }
+
+        // ------------------------------------------------------------
+        // 4. COPY KNOWLEDGE FUNCTIONS
+        // ------------------------------------------------------------
+        // Uses knowledgeData and videoId initialized at the top
+
+        function toggleCopyMenu(event) {
+            event.stopPropagation();
+            document.getElementById('copyMenu').classList.toggle('hidden');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('copyDropdown');
+            const menu = document.getElementById('copyMenu');
+            if (dropdown && menu && !dropdown.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        function copyKnowledge(format) {
+            let content = '';
+
+            if (format === 'json') {
+                content = JSON.stringify(knowledgeData, null, 2);
+            } else if (format === 'markdown') {
+                content = generateMarkdown(knowledgeData);
+            } else {
+                content = generatePlainText(knowledgeData);
+            }
+
+            navigator.clipboard.writeText(content).then(() => {
+                showCopyToast('Đã copy ' + format.toUpperCase() + '!');
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = content;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showCopyToast('Đã copy ' + format.toUpperCase() + '!');
+            });
+
+            document.getElementById('copyMenu').classList.add('hidden');
+        }
+
+        function generateMarkdown(kc) {
+            if (!kc || Object.keys(kc).length === 0) return 'No data available';
+
+            let md = `# ${kc.title || 'Untitled'}\n\n`;
+            md += `> ${kc.summary || ''}\n\n`;
+
+            if (kc.key_takeaways && kc.key_takeaways.length > 0) {
+                md += `## 💡 Điểm chính\n`;
+                kc.key_takeaways.forEach(t => md += `- ${t}\n`);
+                md += '\n';
+            }
+
+            if (kc.action_items && kc.action_items.length > 0) {
+                md += `## 📋 Các bước thực hiện\n`;
+                kc.action_items.forEach((s, i) => md += `${i + 1}. ${s}\n`);
+                md += '\n';
+            }
+
+            if (kc.entities) {
+                if (kc.entities.ingredients && kc.entities.ingredients.length > 0) {
+                    md += `## 🛒 Nguyên liệu\n`;
+                    kc.entities.ingredients.forEach(i => md += `- ${i}\n`);
+                    md += '\n';
+                }
+                if (kc.entities.products && kc.entities.products.length > 0) {
+                    md += `## 📦 Sản phẩm\n`;
+                    kc.entities.products.forEach(p => md += `- ${p}\n`);
+                    md += '\n';
+                }
+                if (kc.entities.locations && kc.entities.locations.length > 0) {
+                    md += `## 📍 Địa điểm\n`;
+                    kc.entities.locations.forEach(l => md += `- ${l}\n`);
+                    md += '\n';
+                }
+            }
+
+            if (kc.tags && kc.tags.length > 0) {
+                md += `---\n**Tags:** ${kc.tags.map(t => '#' + t).join(' ')}\n`;
+            }
+
+            return md;
+        }
+
+        function generatePlainText(kc) {
+            if (!kc || Object.keys(kc).length === 0) return 'No data available';
+
+            let text = `${kc.title || 'Untitled'}\n${'='.repeat(40)}\n\n`;
+            text += `${kc.summary || ''}\n\n`;
+
+            if (kc.key_takeaways && kc.key_takeaways.length > 0) {
+                text += `ĐIỂM CHÍNH:\n`;
+                kc.key_takeaways.forEach(t => text += `• ${t}\n`);
+                text += '\n';
+            }
+
+            if (kc.action_items && kc.action_items.length > 0) {
+                text += `CÁC BƯỚC:\n`;
+                kc.action_items.forEach((s, i) => text += `${i + 1}. ${s}\n`);
+                text += '\n';
+            }
+
+            if (kc.entities && kc.entities.ingredients && kc.entities.ingredients.length > 0) {
+                text += `NGUYÊN LIỆU:\n`;
+                kc.entities.ingredients.forEach(i => text += `• ${i}\n`);
+            }
+
+            return text;
+        }
+
+        function showCopyToast(message) {
+            // Remove existing toast
+            const existing = document.getElementById('copyToast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'copyToast';
+            toast.className = 'fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded-lg shadow-xl z-50 animate-fadeIn';
+            toast.innerHTML = `<i class="fa-solid fa-check mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        // ------------------------------------------------------------
+        // 5. FLOATING CHAT FUNCTIONS
+        // ------------------------------------------------------------
+
+        function openVideoChat() {
+            const chatWindow = document.getElementById('floatingChat');
+            if (chatWindow) {
+                chatWindow.classList.remove('hidden');
+                document.getElementById('videoChatInput').focus();
+            }
+        }
+
+        function closeVideoChat() {
+            const chatWindow = document.getElementById('floatingChat');
+            if (chatWindow) {
+                chatWindow.classList.add('hidden');
+            }
+        }
+
+        // Video Chat form handler
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatForm = document.getElementById('videoChatForm');
+            if (chatForm) {
+                chatForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const input = document.getElementById('videoChatInput');
+                    const messagesArea = document.getElementById('videoChatMessages');
+                    const query = input.value.trim();
+
+                    if (!query) return;
+
+                    // Add user message
+                    messagesArea.innerHTML += `
+                        <div class="flex justify-end">
+                            <div class="bg-purple-600 text-white px-3 py-2 rounded-lg rounded-tr-sm max-w-[80%] text-sm">
+                                ${escapeHtml(query)}
+                            </div>
+                        </div>
+                    `;
+                    input.value = '';
+                    messagesArea.scrollTop = messagesArea.scrollHeight;
+
+                    // Show typing
+                    messagesArea.innerHTML += `
+                        <div class="flex justify-start" id="typingIndicator">
+                            <div class="bg-slate-700 text-slate-300 px-3 py-2 rounded-lg rounded-tl-sm text-sm">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Đang suy nghĩ...
+                            </div>
+                        </div>
+                    `;
+                    messagesArea.scrollTop = messagesArea.scrollHeight;
+
+                    try {
+                        const response = await fetch('/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                query: query,
+                                video_id: videoId,
+                                history: []
+                            })
+                        });
+                        const result = await response.json();
+
+                        // Remove typing
+                        document.getElementById('typingIndicator')?.remove();
+
+                        if (result.success) {
+                            messagesArea.innerHTML += `
+                                <div class="flex justify-start">
+                                    <div class="bg-slate-700 text-slate-300 px-3 py-2 rounded-lg rounded-tl-sm max-w-[85%] text-sm">
+                                        ${formatChatAnswer(result.answer)}
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            messagesArea.innerHTML += `
+                                <div class="flex justify-start">
+                                    <div class="bg-red-900/50 text-red-300 px-3 py-2 rounded-lg text-sm">
+                                        Lỗi: ${result.error || 'Unknown error'}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } catch (error) {
+                        document.getElementById('typingIndicator')?.remove();
+                        messagesArea.innerHTML += `
+                            <div class="flex justify-start">
+                                <div class="bg-red-900/50 text-red-300 px-3 py-2 rounded-lg text-sm">
+                                    Không thể kết nối server
+                                </div>
+                            </div>
+                        `;
+                    }
+                    messagesArea.scrollTop = messagesArea.scrollHeight;
+                });
+            }
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatChatAnswer(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>')
+                .replace(/- (.*?)(?=<br>|$)/g, '• $1');
+        }
+    </script>
+
+    {% if video.is_slideshow %}
+    <script>
+        // Slides data from template
+        const slidesRaw = document.getElementById('slideshowData')?.textContent || '[]';
+        const slides = JSON.parse(slidesRaw);
+        let currentSlide = 0;
+
+        function updateSlide() {
+            if (slides.length === 0) return;
+            const mainImg = document.getElementById('slideshow-main');
+            if (mainImg) {
+                mainImg.src = slides[currentSlide];
+            }
+            const counter = document.getElementById('slide-current');
+            if (counter) counter.textContent = currentSlide + 1;
+        }
+
+        function nextSlide() { currentSlide = (currentSlide + 1) % slides.length; updateSlide(); }
+        function prevSlide() { currentSlide = (currentSlide - 1 + slides.length) % slides.length; updateSlide(); }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+    </script>
+    {% endif %}
+
+    <!-- Floating Chat Window -->
+    <div id="floatingChat"
+        class="hidden fixed bottom-6 right-6 w-96 h-[520px] bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl flex flex-col z-50">
+        <!-- Header -->
+        <div
+            class="flex items-center justify-between p-4 border-b border-slate-700 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-t-2xl">
+            <div class="flex items-center space-x-2">
+                <div
+                    class="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+                    <i class="fa-solid fa-comments text-white text-sm"></i>
+                </div>
+                <div>
+                    <span class="font-semibold text-white text-sm">Chat về Video này</span>
+                    <p class="text-xs text-slate-400">AI sẽ trả lời dựa trên nội dung video</p>
+                </div>
+            </div>
+            <button onclick="closeVideoChat()" class="text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="videoChatMessages" class="flex-1 overflow-y-auto p-4 space-y-3">
+            <!-- Welcome message -->
+            <div class="flex justify-start">
+                <div class="bg-slate-700/50 text-slate-300 px-3 py-2 rounded-lg rounded-tl-sm max-w-[85%] text-sm">
+                    <p>👋 Xin chào! Tôi có thể giúp bạn:</p>
+                    <ul class="mt-2 space-y-1 text-xs text-slate-400">
+                        <li>• Giải thích chi tiết nội dung video</li>
+                        <li>• Gia giảm công thức cho số người khác</li>
+                        <li>• Đưa ra gợi ý và tips bổ sung</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 border-t border-slate-700 bg-slate-800/50 rounded-b-2xl">
+            <form id="videoChatForm" class="flex space-x-2">
+                <input type="text" id="videoChatInput" placeholder="Hỏi về video này..."
+                    class="flex-1 bg-slate-700/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-purple-500 transition text-sm"
+                    autocomplete="off">
+                <button type="submit"
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-4 py-2.5 rounded-xl transition">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+</body>
+
+</html>

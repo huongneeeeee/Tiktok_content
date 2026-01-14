@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library - TikVault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .category-tab {
+            transition: all 0.2s ease;
+        }
+
+        .category-tab:hover {
+            color: white;
+        }
+
+        .category-tab.active {
+            color: white;
+            border-bottom: 2px solid #3b82f6;
+        }
+
+        .subcategory-chip {
+            background: rgba(51, 65, 85, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .subcategory-chip:hover {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+
+        .subcategory-chip.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .video-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .video-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .video-thumbnail {
+            aspect-ratio: 9/16;
+            object-fit: cover;
+        }
+
+        /* Multi-select styles */
+        .video-card .select-checkbox {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 24px;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .video-card .select-checkbox:hover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .video-card.selected .select-checkbox {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .video-card.selected {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+
+        /* Floating Toolbar */
+        .selection-toolbar {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .selection-toolbar.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-40">
+        <div class="container mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-8">
+                <!-- Logo -->
+                <a href="/" class="flex items-center space-x-2">
+                    <div class="bg-blue-600 p-2 rounded-lg">
+                        <i class="fa-solid fa-play text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold text-white">TikVault</span>
+                </a>
+            </div>
+            <nav class="flex items-center space-x-6">
+                <a href="/" class="text-slate-300 hover:text-white transition">Feed</a>
+                <a href="/library" class="text-white font-medium border-b-2 border-blue-500 pb-1">Library</a>
+                <a href="/search" class="text-slate-300 hover:text-white transition">Search</a>
+                <button onclick="openImportModal()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-upload"></i>
+                    <span>Import</span>
+                </button>
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm cursor-pointer"
+                    onclick="window.location.href='/'">
+                    U
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+        <!-- Breadcrumb -->
+        <div class="flex items-center space-x-2 text-sm mb-6">
+            <a href="/library" class="text-slate-400 hover:text-white transition flex items-center">
+                <i class="fa-solid fa-folder-tree mr-2"></i>Library
+                <span class="ml-2 text-xs bg-slate-700 px-2 py-0.5 rounded">{{ total_videos }} videos</span>
+            </a>
+            {% if current_category %}
+            <i class="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
+            <span class="text-white font-medium flex items-center">
+                <i class="fa-solid fa-folder-open text-indigo-400 mr-2"></i>
+                {{ current_category.replace('_', ' ') }}
+            </span>
+            {% endif %}
+            {% if current_subcategory %}
+            <i class="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
+            <span class="text-purple-400 font-medium">{{ current_subcategory.replace('_', ' ') }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Category Tabs (Root Folders) -->
+        <div class="flex items-center space-x-4 border-b border-slate-700 mb-6 overflow-x-auto pb-2">
+            <a href="/library"
+                class="category-tab py-3 px-4 text-sm font-medium flex items-center space-x-2 whitespace-nowrap {% if not current_category %}active{% else %}text-slate-400{% endif %}">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>Tất cả</span>
+                <span class="text-xs bg-slate-700 px-2 py-0.5 rounded ml-1">{{ total_videos }}</span>
+            </a>
+            {% for cat in categories %}
+            <a href="/library?category={{ cat.clean_key or cat.key }}"
+                class="category-tab py-3 px-4 text-sm font-medium flex items-center space-x-2 whitespace-nowrap {% if current_category == cat.key or current_category == cat.clean_key %}active{% else %}text-slate-400{% endif %}">
+                <i class="{{ cat.icon|default('fa-solid fa-folder') }}"></i>
+                <span>{{ cat.name }}</span>
+                {% if cat.video_count %}
+                <span class="text-xs bg-slate-700 px-2 py-0.5 rounded ml-1">{{ cat.video_count }}</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Subcategory Chips (Subfolders) -->
+        {% if subcategories %}
+        <div class="flex flex-wrap gap-3 mb-6">
+            <a href="/library?category={{ current_category }}"
+                class="subcategory-chip px-4 py-2 rounded-full text-sm flex items-center space-x-2 {% if not current_subcategory %}active{% endif %}">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>Tất cả</span>
+            </a>
+            {% for sub in subcategories %}
+            <a href="/library?category={{ current_category }}&sub={{ sub.key }}"
+                class="subcategory-chip px-4 py-2 rounded-full text-sm flex items-center space-x-2 {% if current_subcategory == sub.key %}active{% endif %}">
+                <i class="fa-solid fa-folder text-sm"></i>
+                <span>{{ sub.name }}</span>
+                {% if sub.video_count %}
+                <span class="text-xs text-slate-400">({{ sub.video_count }})</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Filter Bar -->
+        <div class="flex items-center justify-end mb-6">
+            <div class="flex items-center space-x-4">
+                <span class="text-slate-400 text-sm">{{ videos|length }} Videos</span>
+                <div class="flex items-center space-x-2">
+                    <span class="text-slate-400 text-sm">Sort:</span>
+                    <select id="sortSelect" onchange="sortVideos()"
+                        class="bg-slate-800 text-white text-sm rounded-lg px-3 py-2 border border-slate-700 outline-none cursor-pointer"
+                        style="background-color: #1e293b;">
+                        <option value="newest" {% if current_sort=='newest' %}selected{% endif %}
+                            style="background-color: #1e293b;">Newest</option>
+                        <option value="oldest" {% if current_sort=='oldest' %}selected{% endif %}
+                            style="background-color: #1e293b;">Oldest</option>
+                        <option value="views" {% if current_sort=='views' %}selected{% endif %}
+                            style="background-color: #1e293b;">Most Views</option>
+                        <option value="likes" {% if current_sort=='likes' %}selected{% endif %}
+                            style="background-color: #1e293b;">Most Liked</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {% for video in videos %}
+            <div class="video-card rounded-xl overflow-hidden cursor-pointer" data-video-id="{{ video.video_id }}">
+                <div class="relative">
+                    <!-- Selection Checkbox -->
+                    <div class="select-checkbox"
+                        onclick="event.stopPropagation(); toggleSelect('{{ video.video_id }}', this)">
+                        <i class="fa-solid fa-check text-white text-sm" style="display:none;"></i>
+                    </div>
+                    {% if video.is_slideshow %}
+                    {% set first_image = video.slideshow_images[0] if video.slideshow_images and
+                    video.slideshow_images|length > 0 else '/scraper_images/tiktok_picture_' ~ video.video_id ~
+                    '_0.jpeg' %}
+                    <img src="{{ first_image }}" alt="{{ video.title }}" class="video-thumbnail w-full"
+                        onerror="this.onerror=null; this.src='https://via.placeholder.com/200x356/1e293b/a855f7?text=📷'">
+                    {% else %}
+                    <!-- Video thumbnail: try multiple sources -->
+                    <video class="video-thumbnail w-full" muted preload="metadata" poster="{{ video.thumbnail or '' }}"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <source src="/temp/{{ video.video_id }}.mp4#t=0.5" type="video/mp4">
+                    </video>
+                    <div class="video-thumbnail w-full bg-gradient-to-br from-slate-800 to-slate-900 items-center justify-center"
+                        style="display:none;">
+                        <i class="fa-solid fa-video text-4xl text-slate-600"></i>
+                    </div>
+                    {% endif %}
+
+                    <!-- Duration/Type Badge -->
+                    <div class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                        {% if video.is_slideshow %}
+                        <i class="fa-solid fa-images"></i>
+                        {% else %}
+                        {{ video.duration|default('00:00') }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Views -->
+                    <div
+                        class="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center space-x-1">
+                        <i class="fa-solid fa-play text-xs"></i>
+                        <span>{{ video.stats.views|default(0) if video.stats else '0' }}</span>
+                    </div>
+                </div>
+
+                <div class="p-3">
+                    <h3 class="text-white text-sm font-medium line-clamp-2 mb-2">{{ video.title }}</h3>
+                    <div class="flex items-center space-x-2">
+                        <img src="{{ video.author.avatar if video.author and video.author.avatar else 'https://ui-avatars.com/api/?name=U&background=random&size=24' }}"
+                            class="w-5 h-5 rounded-full"
+                            onerror="this.src='https://ui-avatars.com/api/?name=U&background=random&size=24'">
+                        <span class="text-slate-400 text-xs">@{{ video.author.nickname if video.author else 'unknown'
+                            }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if not videos %}
+            <div class="col-span-full text-center py-20">
+                <i class="fa-solid fa-folder-open text-6xl text-slate-700 mb-4"></i>
+                <p class="text-slate-400">No videos in this category</p>
+                <a href="/" class="text-blue-400 hover:underline mt-2 inline-block">Import your first video</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Floating Selection Toolbar -->
+        <div id="selectionToolbar" class="selection-toolbar">
+            <div class="flex items-center gap-2 text-white">
+                <i class="fa-solid fa-check-double text-blue-400"></i>
+                <span id="selectedCount">0</span>
+                <span class="text-slate-400">selected</span>
+            </div>
+            <div class="h-6 w-px bg-slate-600"></div>
+            <!-- Copy Button -->
+            <button onclick="copySelectedContent()" id="copyBtn"
+                class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                <i class="fa-solid fa-copy"></i>
+                <span>Copy</span>
+            </button>
+            <!-- Chat Button -->
+            <button onclick="goToChatWithContent()"
+                class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                <i class="fa-solid fa-comment-dots"></i>
+                <span>Chat</span>
+            </button>
+            <button onclick="clearSelection()" class="text-slate-400 hover:text-white px-3 py-2 transition">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- Import Modal -->
+    <div id="importModal"
+        class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="glass-card rounded-2xl p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-white">Import TikTok Video</h2>
+                <button onclick="closeImportModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="importForm" onsubmit="submitImport(event)">
+                <div class="mb-4">
+                    <label class="block text-sm text-slate-400 mb-2">TikTok URL</label>
+                    <input type="text" id="tiktokUrl" placeholder="https://www.tiktok.com/@user/video/..."
+                        class="w-full bg-slate-900 text-white rounded-lg px-4 py-3 outline-none border border-slate-700 focus:border-blue-500 transition">
+                </div>
+                <button type="submit" id="submitBtn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Import Video</span>
+                </button>
+            </form>
+            <div id="importStatus" class="mt-4 hidden">
+                <div class="flex items-center space-x-2 text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Processing video...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Removed duplicate toolbar -->
+
+    <script>
+        function viewVideo(videoId) {
+            window.location.href = '/video/' + videoId;
+        }
+
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+        }
+
+        async function submitImport(e) {
+            e.preventDefault();
+            const url = document.getElementById('tiktokUrl').value;
+            if (!url) return;
+
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Processing...';
+            document.getElementById('importStatus').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/tiktok/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Video imported successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-download mr-2"></i>Import Video';
+                document.getElementById('importStatus').classList.add('hidden');
+                closeImportModal();
+            }
+        }
+
+        async function resetDatabase() {
+            if (!confirm('⚠️ Bạn có chắc muốn XÓA TOÀN BỘ dữ liệu?\n\nHành động này không thể hoàn tác!')) return;
+            if (!confirm('Xác nhận lần cuối: XÓA TẤT CẢ video đã lưu?')) return;
+
+            try {
+                const response = await fetch('/api/system/reset', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Đã xóa toàn bộ dữ liệu!');
+                    window.location.reload();
+                } else {
+                    alert('Lỗi: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        function sortVideos() {
+            const sortBy = document.getElementById('sortSelect').value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('sort', sortBy);
+            window.location.href = url.toString();
+        }
+
+        // =============================================
+        // Multi-Select Functions (Max 5 videos)
+        // =============================================
+        const MAX_SELECTED_VIDEOS = 5;
+        let selectedVideos = new Set();
+
+        function toggleSelect(videoId, checkbox) {
+            const card = checkbox.closest('.video-card');
+            const icon = checkbox.querySelector('i');
+
+            if (selectedVideos.has(videoId)) {
+                selectedVideos.delete(videoId);
+                card.classList.remove('selected');
+                icon.style.display = 'none';
+            } else {
+                // Check max limit
+                if (selectedVideos.size >= MAX_SELECTED_VIDEOS) {
+                    alert(`Chỉ được chọn tối đa ${MAX_SELECTED_VIDEOS} video`);
+                    return;
+                }
+                selectedVideos.add(videoId);
+                card.classList.add('selected');
+                icon.style.display = 'block';
+            }
+
+            console.log('Selected videos:', Array.from(selectedVideos));
+            updateToolbar();
+        }
+
+        function updateToolbar() {
+            const toolbar = document.getElementById('selectionToolbar');
+            const countEl = document.getElementById('selectedCount');
+            const count = selectedVideos.size;
+
+            countEl.textContent = count;
+
+            if (count > 0) {
+                toolbar.classList.add('visible');
+            } else {
+                toolbar.classList.remove('visible');
+            }
+        }
+
+        function clearSelection() {
+            selectedVideos.clear();
+            document.querySelectorAll('.video-card.selected').forEach(card => {
+                card.classList.remove('selected');
+                card.querySelector('.select-checkbox i').style.display = 'none';
+            });
+            updateToolbar();
+        }
+
+        // =============================================
+        // Copy & Chat Functions
+        // =============================================
+
+        // Store for video content (fetched on demand)
+        let videoContentCache = {};
+
+        async function fetchVideoContent(videoId) {
+            if (videoContentCache[videoId]) {
+                return videoContentCache[videoId];
+            }
+            try {
+                const response = await fetch(`/video/${videoId}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    videoContentCache[videoId] = data;
+                    return data;
+                }
+            } catch (e) {
+                console.error('Error fetching video:', videoId, e);
+            }
+            return null;
+        }
+
+        function formatVideoForCopy(video) {
+            if (!video) return '';
+
+            const card = video.ai_analysis?.knowledge_card || {};
+            const classification = video.ai_analysis?.classification || {};
+
+            let content = `## ${video.title || 'Video'}\n`;
+            content += `📂 Category: ${classification.category_path || 'N/A'}\n`;
+            content += `👤 Author: @${video.author?.nickname || 'unknown'}\n`;
+            content += `🔗 Link: https://www.tiktok.com/@${video.author?.nickname}/video/${video.video_id}\n\n`;
+
+            // Summary
+            if (card.summary) {
+                content += `### Tóm tắt\n${card.summary}\n\n`;
+            }
+
+            // Key takeaways
+            if (card.key_takeaways && card.key_takeaways.length > 0) {
+                content += `### Key Takeaways\n`;
+                card.key_takeaways.forEach(t => content += `- ${t}\n`);
+                content += '\n';
+            }
+
+            // Action items
+            if (card.action_items && card.action_items.length > 0) {
+                content += `### Các bước/Hành động\n`;
+                card.action_items.forEach((a, i) => content += `${i + 1}. ${a}\n`);
+                content += '\n';
+            }
+
+            // Entities
+            const entities = card.entities || {};
+            if (entities.ingredients && entities.ingredients.length > 0) {
+                content += `### Nguyên liệu\n`;
+                entities.ingredients.forEach(i => content += `- ${i}\n`);
+                content += '\n';
+            }
+            if (entities.locations && entities.locations.length > 0) {
+                content += `### Địa điểm\n`;
+                entities.locations.forEach(l => content += `- ${l}\n`);
+                content += '\n';
+            }
+            if (entities.products && entities.products.length > 0) {
+                content += `### Sản phẩm\n`;
+                entities.products.forEach(p => content += `- ${p}\n`);
+                content += '\n';
+            }
+
+            // Tags
+            if (card.tags && card.tags.length > 0) {
+                content += `Tags: ${card.tags.map(t => '#' + t).join(' ')}\n`;
+            }
+
+            content += '\n---\n\n';
+            return content;
+        }
+
+        async function copySelectedContent() {
+            console.log('Copy button clicked, selected videos:', Array.from(selectedVideos));
+
+            if (selectedVideos.size === 0) {
+                alert('Chưa chọn video nào');
+                return;
+            }
+
+            const copyBtn = document.getElementById('copyBtn');
+            const originalHTML = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Loading...</span>';
+            copyBtn.disabled = true;
+
+            try {
+                const videoIds = Array.from(selectedVideos);
+                console.log('Fetching videos:', videoIds);
+
+                // Fetch all videos in parallel
+                const videoPromises = videoIds.map(id => fetchVideoContent(id));
+                const videos = await Promise.all(videoPromises);
+
+                console.log('Fetched videos:', videos);
+
+                // Filter out null results and build content
+                const validVideos = videos.filter(v => v !== null);
+                console.log('Valid videos:', validVideos.length);
+
+                let fullContent = `# Nội dung ${validVideos.length} Videos đã chọn\n\n`;
+
+                for (const video of validVideos) {
+                    fullContent += formatVideoForCopy(video);
+                }
+
+                console.log('Content to copy:', fullContent.substring(0, 200) + '...');
+
+                // Copy to clipboard
+                await navigator.clipboard.writeText(fullContent);
+
+                // Show success
+                copyBtn.innerHTML = '<i class="fa-solid fa-check text-green-400"></i> <span>Copied!</span>';
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                    copyBtn.disabled = false;
+                }, 2000);
+
+            } catch (e) {
+                console.error('Copy error:', e);
+                alert('Lỗi khi copy: ' + e.message);
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.disabled = false;
+            }
+        }
+
+        function goToChatWithContent() {
+            if (selectedVideos.size === 0) {
+                alert('Chưa chọn video nào');
+                return;
+            }
+
+            // Store selected video IDs in sessionStorage for chat page
+            const videoIds = Array.from(selectedVideos);
+            sessionStorage.setItem('tikvault_selected_videos', JSON.stringify(videoIds));
+
+            // Navigate to chat
+            window.location.href = '/chat?selected=' + videoIds.join(',');
+        }
+
+        // Add click handler to cards (excluding checkbox area)
+        document.querySelectorAll('.video-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.select-checkbox')) {
+                    viewVideo(card.dataset.videoId);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

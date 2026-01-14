@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikVault - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border-right: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .nav-item {
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        /* Video Card */
+        .video-card {
+            background: #1e293b;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .video-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .video-thumbnail {
+            aspect-ratio: 9/16;
+            object-fit: cover;
+        }
+
+        /* Upload Card */
+        .upload-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 2px dashed rgba(71, 85, 105, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .upload-card:hover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        /* Search */
+        .search-box {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+
+        .search-box:focus-within {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Storage bar */
+        .storage-bar {
+            background: rgba(71, 85, 105, 0.3);
+        }
+
+        .storage-fill {
+            background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+
+        /* Masonry-like grid */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 1280px) {
+            .video-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 fixed h-full flex flex-col z-40">
+        <!-- Logo -->
+        <div class="p-6 flex items-center space-x-3">
+            <div class="bg-blue-600 p-2 rounded-xl">
+                <i class="fa-solid fa-play text-white text-lg"></i>
+            </div>
+            <span class="text-xl font-bold text-white">TikVault</span>
+        </div>
+
+        <!-- Menu -->
+        <nav class="flex-1 px-4 py-6">
+            <p class="text-xs text-slate-500 uppercase tracking-wider mb-4 px-3">Menu</p>
+
+            <a href="/" class="nav-item active flex items-center space-x-3 px-4 py-3 rounded-xl mb-2 text-white">
+                <i class="fa-solid fa-grip text-lg w-6"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+
+            <a href="#" onclick="openImportModal()"
+                class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl mb-2 text-slate-300 hover:text-white">
+                <i class="fa-solid fa-download text-lg w-6"></i>
+                <span class="font-medium">Import Video</span>
+            </a>
+
+            <a href="/library"
+                class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl mb-2 text-slate-300 hover:text-white">
+                <i class="fa-solid fa-folder text-lg w-6"></i>
+                <span class="font-medium">Library</span>
+            </a>
+
+            <a href="/search"
+                class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl mb-2 text-slate-300 hover:text-white">
+                <i class="fa-solid fa-search text-lg w-6"></i>
+                <span class="font-medium">Search</span>
+            </a>
+        </nav>
+
+        <!-- Footer -->
+        <div class="p-4 text-center text-xs text-slate-500">
+            © 2026 TikVault Inc.
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 ml-64">
+        <!-- Header -->
+        <header class="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50 px-8 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Search -->
+                <div class="search-box flex items-center space-x-3 px-4 py-2.5 rounded-xl w-96">
+                    <i class="fa-solid fa-search text-slate-400"></i>
+                    <input type="text" placeholder="Search your videos..."
+                        class="bg-transparent flex-1 outline-none text-white placeholder-slate-500" id="searchInput"
+                        onkeypress="if(event.key==='Enter') searchVideos()">
+                    <button onclick="searchVideos()" class="text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
+                </div>
+
+                <!-- Right Actions -->
+                <div class="flex items-center space-x-4">
+                    <button onclick="resetDatabase()" class="p-2 text-red-400 hover:text-red-300 transition"
+                        title="Reset Database">
+                        <i class="fa-solid fa-trash-can text-lg"></i>
+                    </button>
+                    <!-- User Menu -->
+                    <div class="relative" id="userMenuContainer">
+                        <button onclick="toggleUserMenu()"
+                            class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold hover:ring-2 hover:ring-blue-400 transition">
+                            {{ user_initial|default('U') }}
+                        </button>
+                        <div id="userMenu"
+                            class="hidden absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-xl border border-slate-700 py-2 z-50">
+                            <hr class="border-slate-700 my-2">
+                            <button onclick="resetDatabase()"
+                                class="w-full text-left px-4 py-2 text-red-400 hover:bg-slate-700 transition">
+                                <i class="fa-solid fa-trash-can mr-2"></i>Reset Database
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="p-8">
+            <!-- Page Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2">My Dashboard</h1>
+                    <p class="text-slate-400">Manage and organize your uploaded content</p>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
+                        <i class="fa-solid fa-sort text-slate-400"></i>
+                        <select id="sortBy" class="bg-slate-800 text-white outline-none text-sm cursor-pointer"
+                            onchange="sortVideos()" style="background-color: #1e293b;">
+                            <option value="newest" style="background-color: #1e293b;">Newest</option>
+                            <option value="oldest" style="background-color: #1e293b;">Oldest</option>
+                            <option value="views" style="background-color: #1e293b;">Most Views</option>
+                            <option value="likes" style="background-color: #1e293b;">Most Likes</option>
+                        </select>
+                    </div>
+
+                    <button onclick="openImportModal()"
+                        class="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Import Video</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Video Grid -->
+            <div class="video-grid" id="videoGrid">
+                {% if videos %}
+                {% for video in videos %}
+                <div class="video-card rounded-2xl cursor-pointer" onclick="viewVideo('{{ video.video_id }}')">
+                    <div class="relative">
+                        {% if video.is_slideshow %}
+                        <!-- SLIDESHOW: Hiển thị ảnh đầu tiên -->
+                        {% set first_image = video.slideshow_images[0] if video.slideshow_images and
+                        video.slideshow_images|length > 0 else '/scraper_images/tiktok_picture_' ~ video.video_id ~
+                        '_0.jpeg' %}
+                        <img src="{{ first_image }}" alt="{{ video.title }}"
+                            class="video-thumbnail w-full rounded-t-2xl object-cover"
+                            onerror="this.onerror=null; this.src='https://via.placeholder.com/200x356/1e293b/a855f7?text=📷'">
+                        <!-- Badge số ảnh -->
+                        <div
+                            class="absolute top-3 left-3 bg-purple-600 text-white text-xs px-2 py-1 rounded-lg flex items-center space-x-1">
+                            <i class="fa-solid fa-images"></i>
+                            <span>{{ video.slideshow_images|length if video.slideshow_images else 'Photo' }}</span>
+                        </div>
+                        {% elif video.thumbnail %}
+                        <!-- VIDEO với thumbnail -->
+                        <img src="{{ video.thumbnail }}" alt="{{ video.title }}"
+                            class="video-thumbnail w-full rounded-t-2xl"
+                            onerror="this.parentElement.innerHTML = '<video class=\'video-thumbnail w-full rounded-t-2xl\' muted preload=\'metadata\'><source src=\'/temp/{{ video.filename }}\' type=\'video/mp4\'></video>'">
+                        {% else %}
+                        <!-- VIDEO không có thumbnail: dùng video preview -->
+                        <video class="video-thumbnail w-full rounded-t-2xl" muted preload="metadata"
+                            poster="https://via.placeholder.com/200x356/1e293b/475569?text=Video"
+                            onloadeddata="this.currentTime = 1; this.removeAttribute('poster');">
+                            <source src="/temp/{{ video.filename }}" type="video/mp4">
+                        </video>
+                        {% endif %}
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-t-2xl pointer-events-none">
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 p-4 flex justify-between items-center">
+                            <span class="text-xs bg-black/50 text-white px-2 py-1 rounded">
+                                {% if video.is_slideshow %}
+                                <i class="fa-solid fa-music mr-1"></i>Audio
+                                {% else %}
+                                {{ video.duration|default('00:00') }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-white text-sm line-clamp-2 mb-3">{{ video.title }}</h3>
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span class="flex items-center space-x-1">
+                                <i class="fa-solid fa-eye"></i>
+                                <span>{{ video.stats.views|default(0) if video.stats else '0' }}</span>
+                            </span>
+                            <span class="flex items-center space-x-1 text-pink-400">
+                                <i class="fa-solid fa-heart"></i>
+                                <span>{{ video.stats.likes|default(0) if video.stats else '0' }}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <!-- Upload New Card -->
+                <div class="upload-card rounded-2xl flex flex-col items-center justify-center min-h-[280px] cursor-pointer"
+                    onclick="openImportModal()">
+                    <div class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-plus text-slate-400 text-xl"></i>
+                    </div>
+                    <span class="text-slate-400 font-medium">Upload New</span>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            {% if not videos %}
+            <div class="text-center py-16" id="emptyState">
+                <i class="fa-solid fa-video text-6xl text-slate-700 mb-6"></i>
+                <h3 class="text-xl font-semibold text-white mb-2">No videos yet</h3>
+                <p class="text-slate-400 mb-6">Start by importing your first TikTok video</p>
+                <button onclick="openImportModal()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition">
+                    <i class="fa-solid fa-download mr-2"></i>
+                    Import Video
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="modal-content rounded-2xl p-8 w-full max-w-lg mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white">Import Video</h2>
+                <button onclick="closeImportModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <form id="importForm" onsubmit="submitImport(event)">
+                <div class="mb-6">
+                    <label class="block text-slate-300 text-sm font-medium mb-2">TikTok URL</label>
+                    <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+                        <span class="px-4 text-slate-500">
+                            <i class="fa-brands fa-tiktok"></i>
+                        </span>
+                        <input type="text" id="tiktokUrl" required placeholder="https://www.tiktok.com/@user/video/..."
+                            class="flex-1 bg-transparent text-white px-2 py-3 outline-none placeholder-slate-500">
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-xs text-slate-400">
+                        <i class="fa-solid fa-circle-info mr-1"></i>
+                        AI sẽ tự động phân loại và trích xuất thông tin từ video
+                    </p>
+                </div>
+
+                <div class="flex space-x-4">
+                    <button type="button" onclick="closeImportModal()"
+                        class="flex-1 py-3 border border-slate-600 text-slate-300 rounded-lg font-medium hover:bg-slate-800 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submitBtn"
+                        class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition flex items-center justify-center">
+                        <span>Import</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Progress -->
+            <div id="importProgress" class="hidden mt-6">
+                <div class="flex items-center space-x-3 text-white">
+                    <div class="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    <span id="progressText">Đang tải video...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal Functions
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+            document.body.style.overflow = '';
+            document.getElementById('importForm').reset();
+            document.getElementById('importProgress').classList.add('hidden');
+            document.getElementById('submitBtn').disabled = false;
+        }
+
+        // Import Video
+        async function submitImport(e) {
+            e.preventDefault();
+
+            const url = document.getElementById('tiktokUrl').value.trim();
+            if (!url) return;
+
+            // Show progress
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('importProgress').classList.remove('hidden');
+
+            const steps = [
+                'Đang tải video...',
+                'Đang transcript audio...',
+                'AI đang phân tích...',
+                'Lưu vào database...'
+            ];
+
+            let stepIndex = 0;
+            const progressInterval = setInterval(() => {
+                if (stepIndex < steps.length) {
+                    document.getElementById('progressText').textContent = steps[stepIndex];
+                    stepIndex++;
+                }
+            }, 3000);
+
+            try {
+                const response = await fetch('/api/tiktok/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                clearInterval(progressInterval);
+
+                if (data.success) {
+                    closeImportModal();
+                    window.location.reload();
+                } else {
+                    alert('Lỗi: ' + (data.error || 'Không thể import video'));
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('importProgress').classList.add('hidden');
+                }
+            } catch (error) {
+                clearInterval(progressInterval);
+                alert('Lỗi kết nối. Vui lòng thử lại.');
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('importProgress').classList.add('hidden');
+            }
+        }
+
+        // Search
+        function searchVideos() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) {
+                window.location.href = '/search?q=' + encodeURIComponent(query);
+            }
+        }
+
+        // Sort
+        function sortVideos() {
+            const sortBy = document.getElementById('sortBy').value;
+            window.location.href = '/?sort=' + sortBy;
+        }
+
+        // View Video
+        function viewVideo(videoId) {
+            window.location.href = '/video/' + videoId;
+        }
+
+        // Close modal on escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeImportModal();
+        });
+
+        // Close modal on overlay click
+        document.getElementById('importModal').addEventListener('click', function (e) {
+            if (e.target === this) closeImportModal();
+        });
+
+        // Toggle user menu
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Close user menu when clicking outside
+        document.addEventListener('click', function (e) {
+            const container = document.getElementById('userMenuContainer');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('userMenu').classList.add('hidden');
+            }
+        });
+
+        // Reset database
+        async function resetDatabase() {
+            if (!confirm('⚠️ Bạn có chắc muốn XÓA TOÀN BỘ dữ liệu?\n\nHành động này không thể hoàn tác!')) return;
+            if (!confirm('Xác nhận lần cuối: XÓA TẤT CẢ video đã lưu?')) return;
+
+            try {
+                const response = await fetch('/api/system/reset', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Đã xóa toàn bộ dữ liệu!');
+                    window.location.reload();
+                } else {
+                    alert('Lỗi: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+    </script>
+</body>
+
+</html>
