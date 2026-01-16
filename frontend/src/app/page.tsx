@@ -141,24 +141,28 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Coming Soon Features */}
+        {/* Quick Actions */}
         <div className="bg-gray-800/30 rounded-xl p-8 border border-gray-700">
-          <h3 className="text-xl font-semibold mb-6 text-center">🚀 Coming Soon</h3>
+          <h3 className="text-xl font-semibold mb-6 text-center">🚀 Bắt đầu ngay</h3>
           <div className="grid md:grid-cols-3 gap-6">
-            <FeatureCard
+            <ActionCard
               icon="📤"
               title="Upload Video"
-              description="Upload MP4 files or paste TikTok links"
+              description="Upload MP4 hoặc paste TikTok link để phân tích"
+              href="/upload"
+              primary
             />
-            <FeatureCard
-              icon="🤖"
-              title="AI Analysis"
-              description="Gemini-powered script and visual analysis"
+            <ActionCard
+              icon="📚"
+              title="Video Library"
+              description="Xem tất cả video đã phân tích"
+              href="/library"
             />
-            <FeatureCard
-              icon="📊"
-              title="Viral Score"
-              description="Predict viral potential (1-10)"
+            <ActionCard
+              icon="🔍"
+              title="Tìm kiếm"
+              description="Tìm video theo category, viral score, key message"
+              href="/library"
             />
           </div>
         </div>
@@ -174,12 +178,31 @@ export default function Home() {
   );
 }
 
-function FeatureCard({ icon, title, description }: { icon: string; title: string; description: string }) {
+function ActionCard({
+  icon,
+  title,
+  description,
+  href,
+  primary = false
+}: {
+  icon: string;
+  title: string;
+  description: string;
+  href: string;
+  primary?: boolean;
+}) {
   return (
-    <div className="text-center p-4">
+    <a
+      href={href}
+      className={`text-center p-6 rounded-xl transition border ${primary
+          ? 'bg-blue-600/20 border-blue-500/50 hover:bg-blue-600/30'
+          : 'bg-gray-700/30 border-gray-600 hover:bg-gray-700/50'
+        }`}
+    >
       <div className="text-4xl mb-3">{icon}</div>
       <h4 className="font-semibold mb-2">{title}</h4>
       <p className="text-sm text-gray-400">{description}</p>
-    </div>
+    </a>
   );
 }
+

@@ -181,26 +181,56 @@ def get_video_document_template() -> dict:
         "video_id": "",
         "title": "",
         "url": "",
+        "local_path": "",  # Path to local video file
         "metadata": {
             "author": {"id": "", "username": "", "nickname": ""},
             "stats": {"views": 0, "likes": 0, "comments": 0, "shares": 0},
             "duration": 0.0,
             "hashtags": [],
-            "music": {"title": "", "author": ""}
+            "music": {"title": "", "author": ""},
+            "file_size_mb": 0.0,
+            "extension": ""
         },
+        # New structured analysis from Gemini
         "analysis": {
+            "general_info": {
+                "title": "",
+                "category": "",
+                "overall_sentiment": "",
+                "target_audience": ""
+            },
+            "content_analysis": {
+                "main_objective": "",
+                "key_message": "",
+                "hook_strategy": ""
+            },
+            "script_breakdown": [],  # List of ScriptSegment dicts
+            "technical_audit": {
+                "editing_style": "",
+                "sound_design": "",
+                "cta_analysis": "",
+                "video_quality": "",
+                "transitions": ""
+            },
+            "virality_factors": {
+                "score": 0,
+                "reasons": "",
+                "improvement_suggestions": "",
+                "strengths": [],
+                "weaknesses": []
+            },
+            # Legacy fields for backward compatibility
             "transcript": "",
             "ocr_text": "",
             "normalized_text": "",
-            "category": "",
-            "sub_category": "",
             "keywords": [],
             "summary": "",
             "quality_score": 0.0
         },
-        "status": "pending",
+        "status": "pending",  # pending, uploaded, processing, analyzed, failed
         "error": None,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
-        "analyzed_at": None
+        "analyzed_at": None,
+        "analysis_processing_time_ms": None
     }

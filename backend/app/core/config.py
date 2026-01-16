@@ -13,6 +13,7 @@ PROJECT_ROOT = os.path.dirname(BACKEND_DIR)
 load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 
 
+
 def _extract_db_name_from_uri(uri: str, default: str = "video_analysis_ai") -> str:
     """Extract database name from MongoDB URI path."""
     try:
@@ -68,6 +69,13 @@ class Config:
     OCR_LANG = os.getenv("OCR_LANG", "vie")
     OCR_MAX_FRAMES = int(os.getenv("OCR_MAX_FRAMES", "10"))
     TESSERACT_PATH = os.getenv("TESSERACT_PATH", r"C:\Program Files\Tesseract-OCR\tesseract.exe")
+    
+    # ============================================================
+    # Gemini File API Configuration
+    # ============================================================
+    GEMINI_FILE_MAX_SIZE_GB = float(os.getenv("GEMINI_FILE_MAX_SIZE_GB", "2"))  # Max file size in GB
+    GEMINI_PROCESSING_TIMEOUT = int(os.getenv("GEMINI_PROCESSING_TIMEOUT", "300"))  # Seconds to wait for processing
+    GEMINI_UPLOAD_RETRY_COUNT = int(os.getenv("GEMINI_UPLOAD_RETRY_COUNT", "3"))  # Number of retries on upload failure
 
     @staticmethod
     def ensure_dirs():

@@ -10,6 +10,9 @@ sqlalchemy
 sentence-transformers
 langchain-text-splitters
 google-generativeai
+google-genai
+langchain
+langchain-core
 sherpa-onnx
 soundfile
 numpy
