@@ -1,58 +1,73 @@
-# ===========================================
-# Python
-# ===========================================
-__pycache__/
-*.py[cod]
-*$py.class
-*.pyo
-*.pyd
-.Python
-venv/
-env/
-.venv/
-
-# ===========================================
-# Environment & Secrets (CỰC KỲ QUAN TRỌNG)
-# ===========================================
+# Environment files
 .env
 .env.local
 .env.*.local
-*.pem
-*.key
-
-# Google Drive Secrets
 secrets/
-credentials.json
-token.json
-client_secrets.json
 
-# ===========================================
-# Data & Temp
-# ===========================================
-temp/
-scraper_data/
-*.db
-*.sqlite3
-*.log
-logs/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# ===========================================
-# Models (Nên tải bằng code thay vì up lên git)
-# ===========================================
-local_models/
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
 
-# ===========================================
-# IDE & Editor
-# ===========================================
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# ===========================================
-# OS-specific
-# ===========================================
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Temp files
+temp/
+tmp/
+*.tmp
+
+# Uploads & Data
+uploads/
+scraper_data/
+local_models/
+
+# Database
+*.db
+*.sqlite3
+
+# OS files
 .DS_Store
 Thumbs.db
-desktop.ini
+
+# Private Docs
+PROJECT_REVIEW.txt
+test_scraper.py

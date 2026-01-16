@@ -23,8 +23,11 @@ grpcio==1.68.1
 grpcio-tools==1.68.1
 bcrypt
 
+# Video Download
+yt-dlp
+aiofiles
+
 # OCR Dependencies
-paddlepaddle>=2.5.0
-paddleocr>=2.7.0
-opencv-python>=4.8.0
+pytesseract
+Pillow
 scikit-image>=0.21.0

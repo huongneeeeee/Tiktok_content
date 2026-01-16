@@ -7,13 +7,7 @@ class Config:
     # API Keys
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
-    # Database
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
-    QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
-    
     # Services
-    GDRIVE_FOLDER_ID = os.getenv("GDRIVE_FOLDER_ID")
     STT_API_URL = os.getenv("STT_API_URL", "http://localhost:8019/stt/simple")
     
     # OCR Configuration (Tesseract)

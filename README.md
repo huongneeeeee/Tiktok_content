@@ -1,114 +1,84 @@
-# TikVault 
+# TikTok Content AI
 
-Hệ thống quản lý và phân tích video TikTok với AI - tự động trích xuất kiến thức, phân loại nội dung, và tổ chức thông tin.
+A powerful AI-driven tool for analyzing TikTok videos, extracting insights, and calculating virality scores using Google Gemini API.
 
-## 🚀 Tính năng chính
+## Features
 
-- **Auto Import**: Tự động tải video từ TikTok để lưu trữ vĩnh viễn
-- **AI Analysis**: Phân tích nội dung video bằng Gemini AI - trích xuất kiến thức, phân loại tự động
-- **Speech-to-Text**: Chuyển đổi audio thành text bằng Whisper
-- **Collections**: Tổ chức video theo bộ sưu tập tùy chỉnh
-- **Search**: Tìm kiếm semantic trong toàn bộ nội dung đã phân tích
-- **Compare**: So sánh kiến thức giữa các video
+- **Video Ingestion**: Upload video files or download directly from TikTok URLs.
+- **AI Analysis**:
+  - **Speech-to-Text (STT)**: Transcribes audio with timestamps.
+  - **OCR**: Extracts text from video frames.
+  - **Scene Detection**: Identifies key visual scenes.
+  - **Content Understanding**: Uses Google Gemini to analyze script, pacing, hooks, and virality factors.
+- **Rich Metadata**: Extracts hashtags, engagement stats (views, likes, comments), and creator info.
+- **API First**: Robust FastAPI backend with MongoDB storage.
 
-## 📋 Yêu cầu hệ thống
+## Tech Stack
 
-- Python 3.10+
-- MongoDB (local hoặc cloud)
-- Qdrant (vector database)
-- Node.js (cho một số tính năng)
+- **Backend**: FastAPI, Python 3.9+
+- **Database**: MongoDB (Metadata), Qdrant (Vector Search - optional)
+- **AI/ML**: Google Gemini API, Tesseract OCR, Faster Whisper (stt), Sentence Transformers.
+- **Scraper**: Custom TikTok scraper based on [TT_Content_Scraper](https://github.com/d4g10/TT_Content_Scraper).
 
-## 🔧 Cài đặt
+## Installation
 
-### 1. Clone repository
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/yourusername/tiktok-content-ai.git
+    cd tiktok-content-ai
+    ```
 
-```bash
-git clone https://github.com/your-username/TikVault.git
-cd TikVault
-```
+2.  **Create a virtual environment**:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
 
-### 2. Tạo virtual environment
+3.  **Install dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-```bash
-python -m venv venv
+4.  **Install External Tools**:
+    - **FFmpeg**: Required for video processing. Ensure it's in your system PATH.
+    - **Tesseract OCR**: Required for text extraction. Install and set path in `.env`.
 
-# Windows
-.\venv\Scripts\activate
+5.  **Configuration**:
+    Create a `.env` file in the root directory (see `.env.example`):
+    ```env
+    MONGO_URI=mongodb://localhost:27017/video_analysis_ai
+    GEMINI_API_KEY=your_gemini_api_key
+    TESSERACT_PATH=C:\Program Files\Tesseract-OCR\tesseract.exe
+    UPLOAD_DIR=uploads
+    ```
 
-# Linux/Mac
-source venv/bin/activate
-```
+## Usage
 
-### 3. Cài đặt dependencies
+1.  **Start the Backend**:
+    ```bash
+    cd backend
+    python -m uvicorn app.main:app --reload
+    ```
+    The API will be available at `http://localhost:8000`.
+    API Docs: `http://localhost:8000/docs`.
 
-```bash
-pip install -r requirements.txt
-```
+2.  **Start the Frontend**:
+    (Instructions for frontend if applicable)
 
-### 4. Cấu hình môi trường
-
-```bash
-# Copy file mẫu
-cp .env.example .env
-
-# Mở file .env và điền các giá trị thật
-```
-
-**Các biến cần cấu hình:**
-- `GEMINI_API_KEY`: API key từ Google AI Studio
-- `GDRIVE_FOLDER_ID`: ID thư mục Google Drive để backup video
-- `MONGO_URI`: Connection string MongoDB
-- `QDRANT_HOST/PORT`: Địa chỉ Qdrant server
-
-### 5. Cấu hình Google Drive (tùy chọn)
-
-Nếu muốn backup video lên Google Drive:
-1. Tạo project tại [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable Google Drive API
-3. Tạo OAuth 2.0 credentials
-4. Download `credentials.json` vào thư mục `secrets/`
-
-### 6. Chạy ứng dụng
-
-```bash
-uvicorn main:app --reload --port 8000
-```
-
-Truy cập: http://localhost:8000
-
-## 📁 Cấu trúc dự án
+## Project Structure
 
 ```
-TikVault/
-├── app/                    # FastAPI application
-│   ├── routers/           # API endpoints
-│   └── database.py        # Database connections
-├── services/              # Core services
-│   ├── analyzer.py        # AI analysis
-│   ├── gdrive.py          # Google Drive integration
-│   ├── stt.py             # Speech-to-text
-│   └── embedding.py       # Vector embeddings
-├── templates/             # Jinja2 HTML templates
-├── static/                # CSS/JS files
-├── TT_Content_Scraper/    # Video scraping module
-├── secrets/               # Credentials (gitignored)
-├── main.py               # Application entry
-└── config.py             # Configuration loader
+├── backend/
+│   ├── app/
+│   │   ├── api/           # API Endpoints
+│   │   ├── services/      # Business Logic (Ingest, Analysis, Core)
+│   │   ├── models/        # Database Models
+│   │   └── core/          # Configuration
+├── frontend/              # Next.js Frontend
+├── TT_Content_Scraper/    # TikTok Scraper Module
+└── requirements.txt
 ```
 
-## 🔐 Bảo mật
-
-> ⚠️ **QUAN TRỌNG**: Không commit các file sau lên Git:
-> - `.env` - chứa API keys
-> - `secrets/` - chứa Google credentials
-> - `credentials.json`, `token.json` - OAuth tokens
-
-Các file này đã được liệt kê trong `.gitignore`
-
-## 📝 License
+## License
 
 MIT License
-
-## 🤝 Đóng góp
-
-Mọi đóng góp đều được hoan nghênh! Vui lòng tạo Issue hoặc Pull Request.
