@@ -1,0 +1,16 @@
+# Line endings
+* text=auto
+
+# Backend
+*.py text eol=lf
+
+# Frontend
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# Env examples
+*.env.example text eol=lf
